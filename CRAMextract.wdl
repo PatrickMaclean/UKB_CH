@@ -11,11 +11,17 @@ workflow CRAMextract {
     }
 
     call cram_munging { 
-        input: cram_file = cram_file, index_file = index_file, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_gzi = ref_genome_gzi
+        input: cram_file = cram_file,
+        cram_index_file = cram_index_file,
+        CHIP_regions = CHIP_regions,
+        ref_genome = ref_genome,
+        ref_genome_index = ref_genome_index,
+        ref_genome_gzi = ref_genome_gzi
     }
 
     output {
         File bam_out = cram_munging.exome_bam
+        File exome_bai = "output.bam.bai"
     }
   
 }
