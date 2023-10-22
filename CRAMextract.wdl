@@ -20,7 +20,7 @@ workflow CRAMextract {
     }
 
     output {
-        File bam_out = cram_munging.exome_bam
+        File bam_out = cram_munging."~{sample_id}_CHIPregions.bam"
         File exome_bai = "output.bam.bai"
     }
   
@@ -28,7 +28,6 @@ workflow CRAMextract {
 
 
 task cram_munging {
-    
     input {
         File cram_file
         File cram_index_file
@@ -41,7 +40,7 @@ task cram_munging {
     command <<<
 samtools view --reference ~{ref_genome} \
   -L ~{CHIP_regions} \
-  -o output.bam \
+  -o "~{sample_id}_CHIPregions.bam" \
   ~{cram_file} && \
   samtools index output.bam
     >>>
@@ -52,8 +51,8 @@ samtools view --reference ~{ref_genome} \
     }
 
     output {
-        File exome_bam = "output.bam"
-        File exome_bai = "output.bam.bai"
+        File exome_bam = "~{sample_id}_CHIPregions.bam"
+        File exome_bai = "~{sample_id}_CHIPregions.bam.bai"
     }
 
 }
