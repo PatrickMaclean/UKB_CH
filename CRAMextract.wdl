@@ -10,13 +10,16 @@ workflow CRAMextract {
         File ref_genome_gzi     #GRCh38_full_analysis_set_plus_decoy_hla.fa.gz.gzi
     }
 
+String output_basename = basename(input_cram, ".cram")
+
     call cram_munging { 
         input: cram_file = cram_file,
         cram_index_file = cram_index_file,
         CHIP_regions = CHIP_regions,
         ref_genome = ref_genome,
         ref_genome_index = ref_genome_index,
-        ref_genome_gzi = ref_genome_gzi
+        ref_genome_gzi = ref_genome_gzi,
+        sample_name = output_basename + ".bam"
     }
 
     output {
