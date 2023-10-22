@@ -1,5 +1,9 @@
 version 1.0
 
+## notes - https://github.com/openwdl/learn-wdl/blob/master/3_genomic_tool_pipelines/3_haplotype_caller_GATK/HaplotypeCaller.aws.wdl
+
+# WORKFLOW DEFINITION
+
 workflow CRAMextract {
     input {
         File cram_file
@@ -10,7 +14,7 @@ workflow CRAMextract {
         File ref_genome_gzi     #GRCh38_full_analysis_set_plus_decoy_hla.fa.gz.gzi
     }
 
-String output_basename = basename(input_cram, ".cram")
+String input_basename = basename(input_cram, ".cram")
 
     call cram_munging { 
         input: cram_file = cram_file,
@@ -19,16 +23,17 @@ String output_basename = basename(input_cram, ".cram")
         ref_genome = ref_genome,
         ref_genome_index = ref_genome_index,
         ref_genome_gzi = ref_genome_gzi,
-        sample_name = output_basename + ".bam"
+        sample_name = input_basename
     }
 
     output {
-        File bam_out = cram_munging."~{sample_id}_CHIPregions.bam"
-        File exome_bai = "output.bam.bai"
+        File exome_CHIPregions_bam = cram_munging."~{sample_name}_CHIPregions.bam"
+        File exome_CHIPregions_bam_bai = "output.bam.bai"
     }
   
 }
 
+# TASK DEFINITIONS
 
 task cram_munging {
     input {
@@ -43,9 +48,9 @@ task cram_munging {
     command <<<
 samtools view --reference ~{ref_genome} \
   -L ~{CHIP_regions} \
-  -o "~{sample_id}_CHIPregions.bam" \
+  -o "~{sample_name}_CHIPregions.bam" \
   ~{cram_file} && \
-  samtools index output.bam
+  samtools index "~{sample_name}_CHIPregions.bam"
     >>>
 
     runtime {
@@ -54,7 +59,7 @@ samtools view --reference ~{ref_genome} \
     }
 
     output {
-        File exome_bam = "~{sample_id}_CHIPregions.bam"
+        File exome_bam = "~{sample_name}_CHIPregions.bam"
         File exome_bai = "~{sample_id}_CHIPregions.bam.bai"
     }
 
