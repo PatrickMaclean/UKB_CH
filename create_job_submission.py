@@ -1,4 +1,5 @@
 # https://dnanexus.gitbook.io/uk-biobank-rap/science-corner/guide-to-analyzing-large-sample-sets#tip-submitting-the-large-batch-of-jobs-via-swiss-army-knife
+# Usage : python create_job_submission.py inputfile.txt 100 > submission_command.txt
 
 import sys
 import math
