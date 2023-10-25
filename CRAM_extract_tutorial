@@ -1,4 +1,5 @@
 version 1.0
+# Source https://dnanexus.gitbook.io/uk-biobank-rap/science-corner/guide-to-analyzing-large-sample-sets#tip-submitting-the-large-batch-of-jobs-via-swiss-army-knife
 
 task CRAM_extract{
     input {
@@ -17,13 +18,6 @@ task CRAM_extract{
         -o "~{file_prefix}_CHIPregions.bam" \
         ~{cram_file} && \
         samtools index "~{file_prefix}_CHIPregions.bam"
-
-
-
-            time samtools view -b -h ${input} -T ~{reference} > ${file_prefix}.bam
-            time arcasHLA extract ${file_prefix}.bam -o output --paired -t $(nproc) -v
-            time arcasHLA genotype output/${file_prefix}.extracted.1.fq.gz output/${file_prefix}.extracted.2.fq.gz -g A,B,C,DPB1,DQB1,DQA1,DRB1 -o output -t 8 -v
-            rm output/*.fq.gz output/*.alignment.p ${file_prefix}.bam
         done
     >>>
 
@@ -32,19 +26,23 @@ task CRAM_extract{
         Array[File] CHIPregionsextractedindex = glob("output/*.CHIPregions.bam.bai")
     }
     runtime {
-        docker: "dx://hla_project:/Docker/arcas_hla_0.0.1.tar.gz"
-        dx_timeout: "48H"
-        dx_instance_type: "mem1_ssd1_v2_x2"
+        docker: "docker/arcas_hla_0.0.1.tar.gz"
+        dx_instance_type: "mem1_ssd1_v2_x8"
     }
+
     parameter_meta {
-    mapped_read: {
+    cram_file: {
         description: "mapped short read data",
         patterns: ["*.cram"],
         stream: true
     }
-    reference: {
+    ref_genome: {
         description: "reference genome",
         patterns: ["*.fa","*.fasta"]
+    }
+    CHIP_regions: {
+        description: "list of CHIP gene regions in bed format",
+        patterns: ["*.bed"]
     }
     }
 }
