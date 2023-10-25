@@ -2,7 +2,7 @@ version 1.0
 
 #need to change docker image in the hla_calling task runtime section
 
-workflow hla_calling_wf {
+workflow CHIP_processing {
     input {
         File cram_file
         File cram_file_index 
@@ -18,12 +18,12 @@ workflow hla_calling_wf {
     }
 
     call bam_index {
-        input: CHIP_regions = cram_extract.CHIP_regions
+        input: extracted_regions = cram_extract.extracted_regions
     }
 
     output {
-        File CHIP_regions = cram_extract.CHIP_regions
-        File CHIP_regions_index = bam_index.CHIP_regions_index
+        File extracted_regions = cram_extract.extracted_regions
+        File extracted_regions_index = bam_index.extracted_regions_index
     }
   
 }
@@ -42,7 +42,7 @@ task cram_extract {
 
     command <<<
         set -x -e -o pipefail
-        time samtools view --reference ~{ref_genome} -L ~{CHIP_regions} -o CHIP_regions.bam ~{cram_file} 
+        time samtools view --reference ~{ref_genome} -L ~{CHIP_regions} -o extracted_regions.bam ~{cram_file} 
 
     >>>
 
@@ -52,19 +52,19 @@ task cram_extract {
     }
 
     output {
-        File CHIP_regions = "CHIP_regions.bam"
+        File extracted_regions = "extracted_regions.bam"
     }
 
 }
 
 task bam_index {
     input {
-        File CHIP_regions
+        File extracted_regions
     }
 
     command <<<
 
-        samtools index ~{CHIP_regions} 
+        samtools index ~{extracted_regions} 
     >>>
 
     runtime {
@@ -73,7 +73,7 @@ task bam_index {
     }
 
     output {
-        File CHIP_regions_index = "CHIP_regions.bam.bai"
+        File extracted_regions_index = "extracted_regions.bam.bai"
     }
 
 }
