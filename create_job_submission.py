@@ -1,4 +1,5 @@
 ## Takes in the list of UKB exome files, and splits them into batches of files for job submission
+## Usage python /well/jknight/users/qmy094/analyses/UKB_CHIP/Metadata/470k_exome_crams_raw.txt 100 > 470k_submission_command.txt
 
 import sys
 import math
@@ -28,13 +29,13 @@ for batch_number in range(number_of_batch):
     for member in range(batch_size):
         delim_line = lines[input_number].strip().split('\t')
         name, id, folder = _parse_dx_delim(delim_line)
-        batch_mapped_files += '-imapped_read={} '.format(id)
+        batch_mapped_files += '-icram_file={} '.format(id)
         final_folder='/CRAM_processing/' + str(batch_number)
         input_number+=1
         if input_number == sample_number:
             break
 
-    print('dx run /CRAMextract -ireference=genome_reference/GRCh38_full_analysis_set_plus_decoy_hla.fa\
+    print('dx run /CRAMextract -iref_genome=UKB_CHIP:/Bulk/Exome_sequences/Exome_OQFE_CRAM_files/helper_files/GRCh38_full_analysis_set_plus_decoy_hla.fa\
      {batch_mapped_files} --tag 200K_exome_CRAMextract --tag original --tag batch_n_{batch_number} \
     --folder="{final_folder}" --priority normal \
     -y --brief'.format(batch_mapped_files=batch_mapped_files,batch_number=batch_number,final_folder=final_folder))
