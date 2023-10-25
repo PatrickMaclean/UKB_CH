@@ -18,7 +18,7 @@ String input_basename = basename(input_cram, ".cram")
 
     call cram_munging { 
         input: cram_file = cram_file,
-        cram_index_file = cram_index_file,
+        cram_index_file = cram_file+".crai",
         CHIP_regions = CHIP_regions,
         ref_genome = ref_genome,
         ref_genome_index = ref_genome_index,
