@@ -7,11 +7,9 @@ version 1.0
 workflow CRAMextract {
     input {
         File cram_file
-        File cram_index_file
         File CHIP_regions       #CHIP_genes_38.bed
         File ref_genome         #GRCh38_full_analysis_set_plus_decoy_hla.fa.gz
         File ref_genome_index   #GRCh38_full_analysis_set_plus_decoy_hla.fa.gz.fai
-        File ref_genome_gzi     #GRCh38_full_analysis_set_plus_decoy_hla.fa.gz.gzi
     }
 
 String input_basename = basename(input_cram, ".cram")
@@ -22,7 +20,6 @@ String input_basename = basename(input_cram, ".cram")
         CHIP_regions = CHIP_regions,
         ref_genome = ref_genome,
         ref_genome_index = ref_genome_index,
-        ref_genome_gzi = ref_genome_gzi,
         sample_name = input_basename
     }
 
