@@ -13,22 +13,19 @@ workflow CHIP_processing {
         File ref_genome_gzi     #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz.gzi
     }
 
-    call cram_extract { 
+    call cram_extract_index { 
         input: cram_file = cram_file, cram_file_index = cram_file_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
-    call bam_index {
-        input: extracted_regions = cram_extract.extracted_regions
-    }
 
     output {
-        File extracted_regions = cram_extract.extracted_regions
-        File extracted_regions_index = bam_index.extracted_regions_index
+        File extracted_regions = cram_extract_index.extracted_regions
+        File extracted_regions_index = cram_extract_index.extracted_regions_index
     }
   
 }
 
-task cram_extract {
+task cram_extract_index {
     
     input {
         File cram_file
@@ -43,7 +40,7 @@ task cram_extract {
     command <<<
         set -x -e -o pipefail
         time samtools view --reference ~{ref_genome} -L ~{CHIP_regions} -o extracted_regions.bam ~{cram_file} 
-
+        time samtools index extracted_regions.bam
     >>>
 
     runtime {
@@ -53,26 +50,6 @@ task cram_extract {
 
     output {
         File extracted_regions = "extracted_regions.bam"
-    }
-
-}
-
-task bam_index {
-    input {
-        File extracted_regions
-    }
-
-    command <<<
-
-        samtools index ~{extracted_regions} 
-    >>>
-
-    runtime {
-        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
-        dx_instance_type: "mem1_ssd1_v2_x8"
-    }
-
-    output {
         File extracted_regions_index = "extracted_regions.bam.bai"
     }
 
