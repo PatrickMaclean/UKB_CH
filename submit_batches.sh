@@ -19,6 +19,7 @@ batch=10
 
 dx run CHIP_processing/workflow/CHIP_processing \           
   --batch-tsv batches/batch_${batch}.tsv \    #the batch, this is the result of 01.create_batch.sh
+  -istage-common.CHIP_regions="UKB_CHIP:CHIP_references/CHIP_genes_38.bed" \
   -istage-common.ref_genome="UKB_CHIP:CHIP_references/38/Homo_sapiens_assembly38.fasta.gz" \      #the next four files need to be on your project on dna-nexus, i.e. NOT on your local cluster
   -istage-common.ref_genome_index="UKB_CHIP:CHIP_references/38/Homo_sapiens_assembly38.fasta.gz.fai" \
   -istage-common.ref_genome_dict="UKB_CHIP:CHIP_references/38/Homo_sapiens_assembly38.dict" \
