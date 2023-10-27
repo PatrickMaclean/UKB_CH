@@ -20,10 +20,10 @@ batch=10
 dx run CHIP_processing/workflow/CHIP_processing \           
   --batch-tsv batches/batch_${batch}.tsv \    #the batch, this is the result of 01.create_batch.sh
   -istage-common.CHIP_regions="UKB_CHIP:CHIP_references/CHIP_genes_38.bed" \
-  -istage-common.ref_genome="UKB_CHIP:CHIP_references/38/Homo_sapiens_assembly38.fasta.gz" \      #the next four files need to be on your project on dna-nexus, i.e. NOT on your local cluster
-  -istage-common.ref_genome_index="UKB_CHIP:CHIP_references/38/Homo_sapiens_assembly38.fasta.gz.fai" \
-  -istage-common.ref_genome_dict="UKB_CHIP:CHIP_references/38/Homo_sapiens_assembly38.dict" \
-  -istage-common.ref_genome_gzi="UKB_CHIP:CHIP_references/38/Homo_sapiens_assembly38.fasta.gz.gzi" \
+  -istage-common.ref_genome="UKB_CHIP:CHIP_references/Genome/Homo_sapiens_assembly38.fasta.gz" \      #the next four files need to be on your project on dna-nexus, i.e. NOT on your local cluster
+  -istage-common.ref_genome_index="UKB_CHIP:CHIP_references/Genome/Homo_sapiens_assembly38.fasta.gz.fai" \
+  -istage-common.ref_genome_dict="UKB_CHIP:CHIP_references/Genome/Homo_sapiens_assembly38.dict" \
+  -istage-common.ref_genome_gzi="UKB_CHIP:CHIP_references/Genome/Homo_sapiens_assembly38.fasta.gz.gzi" \
   --priority low \            #priority for the workers on dna-nexus, see here: https://dnanexus.gitbook.io/uk-biobank-rap/working-on-the-research-analysis-platform/managing-job-priority
   --batch-folders \           #will create a different folder for every result in your batch
   --destination=UKB_CHIP:CHIP_processing/output/batch_10_CHIPextract/output_${batch}      #the destination of the results (you do not need to create it yourself, dna-nexus will create this folder automatically)
