@@ -21,11 +21,17 @@ workflow CHIP_processing {
         input: cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index
     }
 
+    call LearnReadOrientationModel {
+        input: F1R2_counts = mutect2.F1R2_counts
+    }
+
     call GetPileupSummaries
 
     call CalculateContamination
 
-    call FilterMutectCalls
+    call FilterMutectCalls {
+        input: read-orientation-model = read-orientation-model.LearnReadOrientationModel
+
 
 
 
@@ -106,11 +112,37 @@ task mutect2 {
 
 }
 
+task LearnReadOrientationModel {
+    
+    input {
+        File F1R2_counts
+    }
+
+    command <<<
+        set -x -e -o pipefail
+        gatk --java-options "-Xmx~{command_mem}m" LearnReadOrientationModel \
+        -I ~{F1R2_counts} \
+        -O read-orientation-model.tar.gz
+>>>
+
+    runtime {
+        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        dx_instance_type: "mem1_ssd1_v2_x8"
+    }
+
+    output {
+        File read-orientation-model.tar.gz
+    }
+}
+
+
 task GetPileupSummaries {
     
     input {
         File cram_file
         File cram_file_index
+-V
+-L
         File CHIP_regions
         File ref_genome
         File ref_genome_index
@@ -122,14 +154,12 @@ task GetPileupSummaries {
 
     command <<<
         set -x -e -o pipefail
-        gatk --java-options "-Xmx~{command_mem}m" Mutect2 \
-            -R ~{ref_genome} \
-            $cram_file \
-            ~{"--germline-resource " + gnomad} \
-            ~{"-pon " + pon} \
-            ~{"-L " + CHIP_regions} \
-            -O "~{output_vcf}" \
-            --f1r2-tar-gz ~{F1R2_counts}
+        gatk --java-options "-Xmx~{command_mem}m" GetPileupSummaries \
+    -I tumor.bam \
+    -V chr17_small_exac_common_3_grch38.vcf.gz \
+    -L chr17_small_exac_common_3_grch38.vcf.gz \
+    -O getpileupsummaries.table
+
 >>>
 
     runtime {
@@ -138,9 +168,72 @@ task GetPileupSummaries {
     }
 
     output {
-        File mutect_unfiltered_vcf = ~{output_vcf}
-        File F1R2_counts = ~{F1R2_counts}
+        File pileupsummariestable = pileupsummariestable.table
     }
 
 }
 
+
+task CalculateContamination {
+    
+    input {
+        File pileupsummariestable
+    }
+
+    command <<<
+        set -x -e -o pipefail
+        gatk --java-options "-Xmx~{command_mem}m" CalculateContamination \
+        -I getpileupsummaries.table \
+        -tumor-segmentation tumoursegments.table \
+        -O calculatecontamination.table
+>>>
+
+    runtime {
+        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        dx_instance_type: "mem1_ssd1_v2_x8"
+    }
+
+    output {
+        File tumoursegmentstable = tumoursegments.table
+        File contaminationtable = contaminationtable.table
+    }
+
+}
+
+
+task FilterMutectCalls {
+    
+    input {
+        File cram_file
+        File cram_file_index
+-V
+-L
+        File CHIP_regions
+        File ref_genome
+        File ref_genome_index
+        File ref_genome_dict
+        File ref_genome_gzi
+        File pon
+        File gnomad
+    }
+
+    command <<<
+        set -x -e -o pipefail
+        gatk --java-options "-Xmx~{command_mem}m" FilterMutectCalls \
+        -V unfiltered.vcf \
+        --tumor-segmentation tumoursegmentstable.table \
+        --contamination-table contaminationtable.table \
+        --ob-priors read-orientation-model.tar.gz \
+        -O filtered.vcf
+>>>
+
+    runtime {
+        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        dx_instance_type: "mem1_ssd1_v2_x8"
+    }
+
+    output {
+        File contaminationtable = contaminationtable.table
+    }
+
+}
