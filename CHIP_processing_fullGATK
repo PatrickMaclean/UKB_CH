@@ -19,11 +19,11 @@ workflow CHIP_processing {
     }
 
     call mutect2 {
-        input: cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: ID = ID, cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call LearnReadOrientationModel {
-        input: F1R2_counts = mutect2.F1R2_counts
+        input: ID = ID, F1R2_counts = mutect2.F1R2_counts
     }
 
     call GetPileupSummaries {
@@ -31,11 +31,11 @@ workflow CHIP_processing {
     }
 
     call CalculateContamination {
-        input: GetPileUpSummaries.pileupsummariestable
+        input: ID = ID, pileupsummariestable = GetPileUpSummaries.pileupsummariestable
     }
 
     call FilterMutectCalls {
-        input: read-orientation-model = LearnReadOrientationModel.read-orientation-model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf
+        input: ID = ID, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf
     }
 
     output {
@@ -114,14 +114,14 @@ task LearnReadOrientationModel {
         set -x -e -o pipefail
         gatk LearnReadOrientationModel \
         -I ~{F1R2_counts} \
-        -O ~{ID}_read-orientation-model.tar.gz
+        -O ~{ID}_read_orientation_model.tar.gz
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
     output {
-        File read-orientation-model = "~{ID}_read-orientation-model.tar.gz"
+        File read_orientation_model = "~{ID}_read_orientation_model.tar.gz"
     }
 }
 
@@ -181,7 +181,7 @@ task FilterMutectCalls {
     input {
         File tumoursegmentstable
         File contaminationtable
-        File read-orientation-model
+        File read_orientation_model
         File mutect_unfiltered_vcf
         String ID
     }
@@ -191,7 +191,7 @@ task FilterMutectCalls {
         -V ~{mutect_unfiltered_vcf} \
         --tumor-segmentation ~{tumoursegmentstable} \
         --contamination-table ~{contaminationtable} \
-        --ob-priors ~{read-orientation-model} \
+        --ob-priors ~{read_orientation_model} \
         -O ~{ID}_filtered.vcf
     >>>
     runtime {
