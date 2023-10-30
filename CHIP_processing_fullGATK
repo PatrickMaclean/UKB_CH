@@ -10,6 +10,7 @@ workflow CHIP_processing {
         File ref_genome_dict
         File ref_genome_gzi
         File gnomad
+        File gnomad_index
         File pon
         String ID = basename(cram_file, ".cram")
     }
@@ -19,7 +20,7 @@ workflow CHIP_processing {
     }
 
     call mutect2 {
-        input: ID = ID, pon = pon, gnomad = gnomad, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: ID = ID, pon = pon, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call LearnReadOrientationModel {
@@ -27,7 +28,7 @@ workflow CHIP_processing {
     }
 
     call GetPileUpSummaries {
-        input: ID = ID, gnomad = gnomad, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: ID = ID, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call CalculateContamination {
