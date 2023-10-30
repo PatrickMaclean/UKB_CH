@@ -11,6 +11,8 @@ workflow CHIP_processing {
         File ref_genome_index   #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz.fai
         File ref_genome_dict    #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.dict
         File ref_genome_gzi     #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz.gzi
+        File gnomad
+        File pon
         String ID = basename(cram_file, ".cram")
     }
 
@@ -30,20 +32,21 @@ workflow CHIP_processing {
         input: ID = ID, gnomad = gnomad, cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index
     }
 
-    call CalculateContamination
+    call CalculateContamination {
+        input: pileupsummariestable.GetPileUpSummaries
 
     call FilterMutectCalls {
-        input: read-orientation-model = read-orientation-model.LearnReadOrientationModel
+        input: read-orientation-model = read-orientation-model.LearnReadOrientationModel, tumoursegmentstable = tumoursegments.table, contaminationtable = contaminationtable.table, mutect_unfiltered_vcf = mutect_unfiltered_vcf.mutect2
+    }
 
     output {
         File extracted_regions = cram_extract_index.extracted_regions
         File extracted_regions_index = cram_extract_index.extracted_regions_index
+        File filtered.vcf = filtered.vcf
     }
-  
 }
 
 task cram_extract_index {
-    
     input {
         File cram_file
         File cram_file_index
@@ -55,23 +58,19 @@ task cram_extract_index {
         File pon
         File gnomad
     }
-
     command <<<
         set -x -e -o pipefail
         time samtools view --reference ~{ref_genome} -L ~{CHIP_regions} -C -o ~{ID}_extracted_regions.cram ~{cram_file} 
         time samtools index ~{ID}_extracted_regions.cram
     >>>
-
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
-
     output {
         File extracted_regions = "~{ID}_extracted_regions.cram"
         File extracted_regions_index = "~{ID}_extracted_regions.cram.crai"
     }
-
 }
 
 task mutect2 {  
@@ -86,7 +85,6 @@ task mutect2 {
         File pon
         File gnomad
     }
-
     command <<<
         set -x -e -o pipefail
         gatk --java-options "-Xmx~{command_mem}m" Mutect2 \
@@ -95,48 +93,41 @@ task mutect2 {
             --germline-resource ~{gnomad} \
             -pon ~{pon} \
             -L ~{CHIP_regions} \
-            -O ~{unfiltered_vcf} \
-            --f1r2-tar-gz ~{F1R2_counts}
+            -O ~{ID}_unfiltered_vcf \
+            --f1r2-tar-gz ~{ID}_F1R2_counts.tar.gz
 >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
-
     output {
-        File mutect_unfiltered_vcf = ~{unfiltered_vcf}
-        File F1R2_counts = ~{F1R2_counts}
+        File mutect_unfiltered_vcf = "~{ID}_unfiltered_vcf"
+        File F1R2_counts = "~{ID}_F1R2_counts.tar.gz"
     }
-
 }
 
 task LearnReadOrientationModel {
-    
     input {
         File F1R2_counts
         String ID
     }
-
     command <<<
         set -x -e -o pipefail
         gatk --java-options "-Xmx~{command_mem}m" LearnReadOrientationModel \
         -I ~{F1R2_counts} \
-        -O read-orientation-model.tar.gz
+        -O ~{ID}_read-orientation-model.tar.gz
 >>>
-
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
-
     output {
-        File read-orientation-model.tar.gz
+        File read-orientation-model = "~{ID}_read-orientation-model.tar.gz"
     }
 }
 
 
 task GetPileupSummaries {
-    
     input {
         File cram_file
         File cram_file_index
@@ -148,25 +139,21 @@ task GetPileupSummaries {
         File pon
         File gnomad
     }
-
     command <<<
         set -x -e -o pipefail
         gatk --java-options "-Xmx~{command_mem}m" GetPileupSummaries \
-    -I ~{extracted_regions} \
-    -V ~{gnomad} \
-    -O getpileupsummaries.table
+        -I ~{extracted_regions} \
+        -V ~{gnomad} \
+        -O ~{ID}_getpileupsummaries.table
 
 >>>
-
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
-
     output {
-        File pileupsummariestable = "pileupsummariestable.table"
+        File pileupsummariestable = "~{ID}_getpileupsummaries.table"
     }
-
 }
 
 
@@ -174,30 +161,24 @@ task CalculateContamination {
     input {
         File pileupsummariestable
     }
-
     command <<<
         set -x -e -o pipefail
         gatk --java-options "-Xmx~{command_mem}m" CalculateContamination \
-        -I getpileupsummaries.table \
-        -tumor-segmentation tumoursegments.table \
-        -O calculatecontamination.table
+        -I ~{pileupsummariestable} \
+        -tumor-segmentation ~{ID}_tumoursegments.table \
+        -O ~{ID}_calculatecontamination.table
 >>>
-
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
-
     output {
-        File tumoursegmentstable = tumoursegments.table
-        File contaminationtable = contaminationtable.table
+        File tumoursegmentstable = "~{ID}_tumoursegments.table"
+        File contaminationtable = "~{ID}_calculatecontamination.table"
     }
-
 }
 
-
-task FilterMutectCalls {
-    
+task FilterMutectCalls {    
     input {
         File cram_file
         File cram_file_index
@@ -208,25 +189,22 @@ task FilterMutectCalls {
         File ref_genome_gzi
         File pon
         File gnomad
+        File mutect_unfiltered_vcf
     }
-
     command <<<
         set -x -e -o pipefail
         gatk --java-options "-Xmx~{command_mem}m" FilterMutectCalls \
-        -V unfiltered.vcf \
-        --tumor-segmentation tumoursegmentstable.table \
-        --contamination-table contaminationtable.table \
+        -V ~{mutect_unfiltered_vcf} \
+        --tumor-segmentation ~{tumoursegmentstable} \
+        --contamination-table ~{contaminationtable} \
         --ob-priors read-orientation-model.tar.gz \
-        -O filtered.vcf
+        -O ~{ID}_filtered.vcf
 >>>
-
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
-
     output {
-        File contaminationtable = contaminationtable.table
+        File filtered.vcf = "~{ID}_filtered.vcf"
     }
-
 }
