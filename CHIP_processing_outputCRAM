@@ -11,29 +11,29 @@ workflow CHIP_processing {
         File ref_genome_index   #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz.fai
         File ref_genome_dict    #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.dict
         File ref_genome_gzi     #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz.gzi
+        String ID = basename(cram_file, ".cram")
     }
 
     call cram_extract_index { 
-        input: cram_file = cram_file, cram_file_index = cram_file_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: ID = ID, cram_file = cram_file, cram_file_index = cram_file_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call mutect2 {
-        input: cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index
+        input: cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call LearnReadOrientationModel {
         input: F1R2_counts = mutect2.F1R2_counts
     }
 
-    call GetPileupSummaries
+    call GetPileupSummaries {
+        input: ID = ID, gnomad = gnomad, cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index
+    }
 
     call CalculateContamination
 
     call FilterMutectCalls {
         input: read-orientation-model = read-orientation-model.LearnReadOrientationModel
-
-
-
 
     output {
         File extracted_regions = cram_extract_index.extracted_regions
@@ -58,24 +58,23 @@ task cram_extract_index {
 
     command <<<
         set -x -e -o pipefail
-        time samtools view --reference ~{ref_genome} -L ~{CHIP_regions} -C -o extracted_regions.cram ~{cram_file} 
-        time samtools index extracted_regions.cram
+        time samtools view --reference ~{ref_genome} -L ~{CHIP_regions} -C -o ~{ID}_extracted_regions.cram ~{cram_file} 
+        time samtools index ~{ID}_extracted_regions.cram
     >>>
 
     runtime {
-        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
 
     output {
-        File extracted_regions = "extracted_regions.cram"
-        File extracted_regions_index = "extracted_regions.cram.crai"
+        File extracted_regions = "~{ID}_extracted_regions.cram"
+        File extracted_regions_index = "~{ID}_extracted_regions.cram.crai"
     }
 
 }
 
-task mutect2 {
-    
+task mutect2 {  
     input {
         File cram_file
         File cram_file_index
@@ -92,21 +91,20 @@ task mutect2 {
         set -x -e -o pipefail
         gatk --java-options "-Xmx~{command_mem}m" Mutect2 \
             -R ~{ref_genome} \
-            $cram_file \
-            ~{"--germline-resource " + gnomad} \
-            ~{"-pon " + pon} \
-            ~{"-L " + CHIP_regions} \
-            -O "~{output_vcf}" \
+            -I ~{extracted_regions} \
+            --germline-resource ~{gnomad} \
+            -pon ~{pon} \
+            -L ~{CHIP_regions} \
+            -O ~{unfiltered_vcf} \
             --f1r2-tar-gz ~{F1R2_counts}
 >>>
-
     runtime {
-        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
 
     output {
-        File mutect_unfiltered_vcf = ~{output_vcf}
+        File mutect_unfiltered_vcf = ~{unfiltered_vcf}
         File F1R2_counts = ~{F1R2_counts}
     }
 
@@ -116,6 +114,7 @@ task LearnReadOrientationModel {
     
     input {
         File F1R2_counts
+        String ID
     }
 
     command <<<
@@ -126,7 +125,7 @@ task LearnReadOrientationModel {
 >>>
 
     runtime {
-        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
 
@@ -141,8 +140,6 @@ task GetPileupSummaries {
     input {
         File cram_file
         File cram_file_index
--V
--L
         File CHIP_regions
         File ref_genome
         File ref_genome_index
@@ -155,27 +152,25 @@ task GetPileupSummaries {
     command <<<
         set -x -e -o pipefail
         gatk --java-options "-Xmx~{command_mem}m" GetPileupSummaries \
-    -I tumor.bam \
-    -V chr17_small_exac_common_3_grch38.vcf.gz \
-    -L chr17_small_exac_common_3_grch38.vcf.gz \
+    -I ~{extracted_regions} \
+    -V ~{gnomad} \
     -O getpileupsummaries.table
 
 >>>
 
     runtime {
-        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
 
     output {
-        File pileupsummariestable = pileupsummariestable.table
+        File pileupsummariestable = "pileupsummariestable.table"
     }
 
 }
 
 
 task CalculateContamination {
-    
     input {
         File pileupsummariestable
     }
@@ -189,7 +184,7 @@ task CalculateContamination {
 >>>
 
     runtime {
-        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
 
@@ -206,8 +201,6 @@ task FilterMutectCalls {
     input {
         File cram_file
         File cram_file_index
--V
--L
         File CHIP_regions
         File ref_genome
         File ref_genome_index
@@ -228,7 +221,7 @@ task FilterMutectCalls {
 >>>
 
     runtime {
-        docker: "dx://UKB_CHIP:/docker/arcas_hla_0.0.1.tar.gz"
+        docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
 
