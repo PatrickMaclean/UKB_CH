@@ -1,16 +1,12 @@
-version 1.0
-
-#need to change docker image in the hla_calling task runtime section
-
 workflow CHIP_processing {
     input {
         File cram_file
         File cram_file_index 
         File CHIP_regions
-        File ref_genome         #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz
-        File ref_genome_index   #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz.fai
-        File ref_genome_dict    #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.dict
-        File ref_genome_gzi     #https://github.com/broadinstitute/gatk/raw/master/src/test/resources/large/Homo_sapiens_assembly38.fasta.gz.gzi
+        File ref_genome         
+        File ref_genome_index   
+        File ref_genome_dict    
+        File ref_genome_gzi     
         File gnomad
         File pon
         String ID = basename(cram_file, ".cram")
@@ -34,6 +30,7 @@ workflow CHIP_processing {
 
     call CalculateContamination {
         input: pileupsummariestable.GetPileUpSummaries
+    }
 
     call FilterMutectCalls {
         input: read-orientation-model = read-orientation-model.LearnReadOrientationModel, tumoursegmentstable = tumoursegments.table, contaminationtable = contaminationtable.table, mutect_unfiltered_vcf = mutect_unfiltered_vcf.mutect2
@@ -42,9 +39,10 @@ workflow CHIP_processing {
     output {
         File extracted_regions = cram_extract_index.extracted_regions
         File extracted_regions_index = cram_extract_index.extracted_regions_index
-        File filtered.vcf = filtered.vcf
+        File filtered.vcf = filtered.vcf.FilterMutectCalls
     }
 }
+
 
 task cram_extract_index {
     input {
@@ -75,8 +73,8 @@ task cram_extract_index {
 
 task mutect2 {  
     input {
-        File cram_file
-        File cram_file_index
+        File extracted_regions
+        File extracted_regions_index 
         File CHIP_regions
         File ref_genome
         File ref_genome_index
@@ -87,7 +85,7 @@ task mutect2 {
     }
     command <<<
         set -x -e -o pipefail
-        gatk --java-options "-Xmx~{command_mem}m" Mutect2 \
+        gatk Mutect2 \
             -R ~{ref_genome} \
             -I ~{extracted_regions} \
             --germline-resource ~{gnomad} \
@@ -113,7 +111,7 @@ task LearnReadOrientationModel {
     }
     command <<<
         set -x -e -o pipefail
-        gatk --java-options "-Xmx~{command_mem}m" LearnReadOrientationModel \
+        gatk LearnReadOrientationModel \
         -I ~{F1R2_counts} \
         -O ~{ID}_read-orientation-model.tar.gz
 >>>
@@ -141,7 +139,7 @@ task GetPileupSummaries {
     }
     command <<<
         set -x -e -o pipefail
-        gatk --java-options "-Xmx~{command_mem}m" GetPileupSummaries \
+        gatk GetPileupSummaries \
         -I ~{extracted_regions} \
         -V ~{gnomad} \
         -O ~{ID}_getpileupsummaries.table
@@ -163,7 +161,7 @@ task CalculateContamination {
     }
     command <<<
         set -x -e -o pipefail
-        gatk --java-options "-Xmx~{command_mem}m" CalculateContamination \
+        gatk CalculateContamination \
         -I ~{pileupsummariestable} \
         -tumor-segmentation ~{ID}_tumoursegments.table \
         -O ~{ID}_calculatecontamination.table
@@ -180,24 +178,18 @@ task CalculateContamination {
 
 task FilterMutectCalls {    
     input {
-        File cram_file
-        File cram_file_index
-        File CHIP_regions
-        File ref_genome
-        File ref_genome_index
-        File ref_genome_dict
-        File ref_genome_gzi
-        File pon
-        File gnomad
+        File tumoursegmentstable
+        File contaminationtable
+        File read-orientation-model
         File mutect_unfiltered_vcf
     }
     command <<<
         set -x -e -o pipefail
-        gatk --java-options "-Xmx~{command_mem}m" FilterMutectCalls \
+        gatk FilterMutectCalls \
         -V ~{mutect_unfiltered_vcf} \
         --tumor-segmentation ~{tumoursegmentstable} \
         --contamination-table ~{contaminationtable} \
-        --ob-priors read-orientation-model.tar.gz \
+        --ob-priors ~{read-orientation-model} \
         -O ~{ID}_filtered.vcf
 >>>
     runtime {
