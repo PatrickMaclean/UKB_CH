@@ -19,7 +19,7 @@ workflow CHIP_processing {
     }
 
     call mutect2 {
-        input: ID = ID, cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: ID = ID, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call LearnReadOrientationModel {
