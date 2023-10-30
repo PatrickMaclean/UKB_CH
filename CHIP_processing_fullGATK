@@ -1,12 +1,14 @@
+version 1.0
+
 workflow CHIP_processing {
     input {
         File cram_file
-        File cram_file_index 
+        File cram_file_index
         File CHIP_regions
-        File ref_genome         
-        File ref_genome_index   
-        File ref_genome_dict    
-        File ref_genome_gzi     
+        File ref_genome
+        File ref_genome_index
+        File ref_genome_dict
+        File ref_genome_gzi
         File gnomad
         File pon
         String ID = basename(cram_file, ".cram")
@@ -25,24 +27,23 @@ workflow CHIP_processing {
     }
 
     call GetPileupSummaries {
-        input: ID = ID, gnomad = gnomad, cram_file = cram_extract_index.extracted_regions, cram_file_index = cram_extract_index.extracted_regions_index
+        input: ID = ID, gnomad = gnomad, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call CalculateContamination {
-        input: pileupsummariestable.GetPileUpSummaries
+        input: GetPileUpSummaries.pileupsummariestable
     }
 
     call FilterMutectCalls {
-        input: read-orientation-model = read-orientation-model.LearnReadOrientationModel, tumoursegmentstable = tumoursegments.table, contaminationtable = contaminationtable.table, mutect_unfiltered_vcf = mutect_unfiltered_vcf.mutect2
+        input: read-orientation-model = LearnReadOrientationModel.read-orientation-model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf
     }
 
     output {
         File extracted_regions = cram_extract_index.extracted_regions
         File extracted_regions_index = cram_extract_index.extracted_regions_index
-        File filtered.vcf = filtered.vcf.FilterMutectCalls
+        File filtered_vcf = FilterMutectCalls.filtered_vcf
     }
 }
-
 
 task cram_extract_index {
     input {
@@ -53,8 +54,7 @@ task cram_extract_index {
         File ref_genome_index
         File ref_genome_dict
         File ref_genome_gzi
-        File pon
-        File gnomad
+        String ID
     }
     command <<<
         set -x -e -o pipefail
@@ -82,6 +82,7 @@ task mutect2 {
         File ref_genome_gzi
         File pon
         File gnomad
+        String ID
     }
     command <<<
         set -x -e -o pipefail
@@ -93,7 +94,7 @@ task mutect2 {
             -L ~{CHIP_regions} \
             -O ~{ID}_unfiltered_vcf \
             --f1r2-tar-gz ~{ID}_F1R2_counts.tar.gz
->>>
+    >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
@@ -114,7 +115,7 @@ task LearnReadOrientationModel {
         gatk LearnReadOrientationModel \
         -I ~{F1R2_counts} \
         -O ~{ID}_read-orientation-model.tar.gz
->>>
+    >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
@@ -127,30 +128,29 @@ task LearnReadOrientationModel {
 
 task GetPileupSummaries {
     input {
-        File cram_file
-        File cram_file_index
-        File CHIP_regions
+        File extracted_regions
+        File extracted_regions_index 
         File ref_genome
         File ref_genome_index
         File ref_genome_dict
         File ref_genome_gzi
-        File pon
         File gnomad
+        String ID
     }
     command <<<
         set -x -e -o pipefail
         gatk GetPileupSummaries \
         -I ~{extracted_regions} \
         -V ~{gnomad} \
-        -O ~{ID}_getpileupsummaries.table
+        -O ~{ID}_pileupsummaries.table
 
->>>
+    >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
     output {
-        File pileupsummariestable = "~{ID}_getpileupsummaries.table"
+        File pileupsummariestable = "~{ID}_pileupsummaries.table"
     }
 }
 
@@ -158,6 +158,7 @@ task GetPileupSummaries {
 task CalculateContamination {
     input {
         File pileupsummariestable
+        String ID
     }
     command <<<
         set -x -e -o pipefail
@@ -165,7 +166,7 @@ task CalculateContamination {
         -I ~{pileupsummariestable} \
         -tumor-segmentation ~{ID}_tumoursegments.table \
         -O ~{ID}_calculatecontamination.table
->>>
+    >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
@@ -182,6 +183,7 @@ task FilterMutectCalls {
         File contaminationtable
         File read-orientation-model
         File mutect_unfiltered_vcf
+        String ID
     }
     command <<<
         set -x -e -o pipefail
@@ -191,12 +193,12 @@ task FilterMutectCalls {
         --contamination-table ~{contaminationtable} \
         --ob-priors ~{read-orientation-model} \
         -O ~{ID}_filtered.vcf
->>>
+    >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
     output {
-        File filtered.vcf = "~{ID}_filtered.vcf"
+        File filtered_vcf = "~{ID}_filtered.vcf"
     }
 }
