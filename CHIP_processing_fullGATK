@@ -83,6 +83,7 @@ task mutect2 {
         File ref_genome_gzi
         File pon
         File gnomad
+        File gnomad_index
         String ID
     }
     command <<<
@@ -136,6 +137,7 @@ task GetPileUpSummaries {
         File ref_genome_dict
         File ref_genome_gzi
         File gnomad
+        File gnomad_index
         String ID
     }
     command <<<
