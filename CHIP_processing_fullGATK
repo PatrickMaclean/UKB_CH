@@ -12,6 +12,7 @@ workflow CHIP_processing {
         File gnomad
         File gnomad_index
         File pon
+        File pon_index
         String ID = basename(cram_file, ".cram")
     }
 
@@ -20,7 +21,7 @@ workflow CHIP_processing {
     }
 
     call mutect2 {
-        input: ID = ID, pon = pon, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: ID = ID, pon = pon, pon = pon_index, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call LearnReadOrientationModel {
