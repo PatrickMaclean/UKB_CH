@@ -28,7 +28,7 @@ workflow CHIP_processing {
     }
 
     call GetPileUpSummaries {
-        input: ID = ID, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: ID = ID, CHIP_regions=CHIP_regions, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call CalculateContamination {
@@ -136,6 +136,7 @@ task GetPileUpSummaries {
         File ref_genome_index
         File ref_genome_dict
         File ref_genome_gzi
+        File CHIP_regions
         File gnomad
         File gnomad_index
         String ID
@@ -143,6 +144,8 @@ task GetPileUpSummaries {
     command <<<
         set -x -e -o pipefail
         gatk GetPileupSummaries \
+        -L ~{CHIP_regions} \
+        --interval-padding 200 \
         -I ~{extracted_regions} \
         -V ~{gnomad} \
         -O ~{ID}_pileupsummaries.table
