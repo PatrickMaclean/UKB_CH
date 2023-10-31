@@ -148,6 +148,7 @@ task GetPileUpSummaries {
         -L ~{CHIP_regions} \
         --interval-padding 200 \
         -I ~{extracted_regions} \
+        -R ~{ref_genome} \
         -V ~{gnomad} \
         -O ~{ID}_pileupsummaries.table
 
