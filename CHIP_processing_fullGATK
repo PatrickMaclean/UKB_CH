@@ -235,7 +235,7 @@ task IndexFeatureFile {
     command <<<
         set -x -e -o pipefail
         gatk IndexFeatureFile \
-        -_ ~{mutect_unfiltered_vcf} \
+        -I ~{mutect_unfiltered_vcf} \
         -O ~{ID}_unfiltered.vcf.gz.tbi
 
         gatk IndexFeatureFile \
