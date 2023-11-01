@@ -37,7 +37,7 @@ workflow CHIP_processing {
     }
 
     call FilterMutectCalls {
-        input: ID = ID, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf
+        input: ID = ID, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, ref_genome = ref_genome
     }
 
     output {
@@ -191,12 +191,14 @@ task FilterMutectCalls {
         File contaminationtable
         File read_orientation_model
         File mutect_unfiltered_vcf
+        File ref_genome
         String ID
     }
     command <<<
         set -x -e -o pipefail
         gatk FilterMutectCalls \
         -V ~{mutect_unfiltered_vcf} \
+        -R ~{ref_genome} \
         --tumor-segmentation ~{tumoursegmentstable} \
         --contamination-table ~{contaminationtable} \
         --ob-priors ~{read_orientation_model} \
