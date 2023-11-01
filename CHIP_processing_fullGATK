@@ -37,7 +37,7 @@ workflow CHIP_processing {
     }
 
     call FilterMutectCalls {
-        input: ID = ID, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, ref_genome = ref_genome
+        input: ID = ID, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     output {
@@ -105,6 +105,7 @@ task mutect2 {
     }
     output {
         File mutect_unfiltered_vcf = "~{ID}_unfiltered_vcf"
+        File mutect_unfiltered_vcf_stats = "~{ID}_unfiltered_vcf.stats"
         File F1R2_counts = "~{ID}_F1R2_counts.tar.gz"
     }
 }
@@ -192,7 +193,11 @@ task FilterMutectCalls {
         File contaminationtable
         File read_orientation_model
         File mutect_unfiltered_vcf
+        File mutect_unfiltered_vcf_stats
         File ref_genome
+        File ref_genome_index
+        File ref_genome_dict
+        File ref_genome_gzi
         String ID
     }
     command <<<
