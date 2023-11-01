@@ -41,12 +41,15 @@ workflow CHIP_processing {
     }
 
     call IndexFeatureFile {
-        input: ID = ID, filtered_vcf = FilterMutectCalls.filtered_vcf
+        input: ID = ID, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, filtered_vcf = FilterMutectCalls.filtered_vcf
     }
 
     output {
         File extracted_regions = cram_extract_index.extracted_regions
         File extracted_regions_index = cram_extract_index.extracted_regions_index
+        File mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf
+        File mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats
+        File mutect_unfiltered_vcf_index = IndexFeatureFile.mutect_unfiltered_vcf_index
         File filtered_vcf = FilterMutectCalls.filtered_vcf
         File filtered_vcf_index = IndexFeatureFile.filtered_vcf_index
     }
@@ -225,13 +228,18 @@ task FilterMutectCalls {
 }
 task IndexFeatureFile {    
     input {
+        File mutect_unfiltered_vcf
         File filtered_vcf
         String ID
     }
     command <<<
         set -x -e -o pipefail
         gatk IndexFeatureFile \
-        -F ~{filtered_vcf} \
+        -_ ~{mutect_unfiltered_vcf} \
+        -O ~{ID}_unfiltered.vcf.gz.tbi
+
+        gatk IndexFeatureFile \
+        -I ~{filtered_vcf} \
         -O ~{ID}_filtered.vcf.gz.tbi
     >>>
     runtime {
@@ -239,6 +247,7 @@ task IndexFeatureFile {
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
     output {
+        File mutect_unfiltered_vcf_index = "~{ID}_unfiltered.vcf.gz.tbi"
         File filtered_vcf_index = "~{ID}_filtered.vcf.gz.tbi"
     }
 }
