@@ -258,7 +258,7 @@ task IndexFeatureFile {
 }
 
 task gzipOutputs {
-    input 
+    input {
         File mutect_unfiltered_vcf
         File mutect_unfiltered_vcf_stats
         File mutect_unfiltered_vcf_index
