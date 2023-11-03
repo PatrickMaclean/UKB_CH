@@ -104,7 +104,7 @@ task mutect2 {
             --germline-resource ~{gnomad} \
             -pon ~{pon} \
             -L ~{CHIP_regions} \
-            -O ~{ID}_unfiltered_vcf \
+            -O ~{ID}_unfiltered_vcf.vcf \
             --f1r2-tar-gz ~{ID}_F1R2_counts.tar.gz
     >>>
     runtime {
@@ -112,7 +112,7 @@ task mutect2 {
         dx_instance_type: "mem1_ssd1_v2_x8"
     }
     output {
-        File mutect_unfiltered_vcf = "~{ID}_unfiltered_vcf"
+        File mutect_unfiltered_vcf = "~{ID}_unfiltered_vcf.vcf"
         File mutect_unfiltered_vcf_stats = "~{ID}_unfiltered_vcf.stats"
         File F1R2_counts = "~{ID}_F1R2_counts.tar.gz"
     }
