@@ -14,38 +14,39 @@ workflow CHIP_processing {
         File pon
         File pon_index
         String ID = basename(cram_file, ".cram")
+        String cpu_req
     }
 
     call cram_extract_index { 
-        input: ID = ID, cram_file = cram_file, cram_file_index = cram_file_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: cpu_req = cpu_req, ID = ID, cram_file = cram_file, cram_file_index = cram_file_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call mutect2 {
-        input: ID = ID, pon = pon, pon_index = pon_index, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: cpu_req = cpu_req, ID = ID, pon = pon, pon_index = pon_index, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, CHIP_regions = CHIP_regions, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call LearnReadOrientationModel {
-        input: ID = ID, F1R2_counts = mutect2.F1R2_counts
+        input: cpu_req = cpu_req, ID = ID, F1R2_counts = mutect2.F1R2_counts
     }
 
     call GetPileUpSummaries {
-        input: ID = ID, CHIP_regions=CHIP_regions, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: cpu_req = cpu_req, ID = ID, CHIP_regions=CHIP_regions, gnomad = gnomad, gnomad_index = gnomad_index, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call CalculateContamination {
-        input: ID = ID, pileupsummariestable = GetPileUpSummaries.pileupsummariestable
+        input: cpu_req = cpu_req, ID = ID, pileupsummariestable = GetPileUpSummaries.pileupsummariestable
     }
 
     call FilterMutectCalls {
-        input: ID = ID, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
+        input: cpu_req = cpu_req, ID = ID, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, ref_genome = ref_genome, ref_genome_index = ref_genome_index, ref_genome_dict = ref_genome_dict, ref_genome_gzi = ref_genome_gzi
     }
 
     call IndexFeatureFile {
-        input: ID = ID, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, filtered_vcf = FilterMutectCalls.filtered_vcf
+        input: cpu_req = cpu_req, ID = ID, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, filtered_vcf = FilterMutectCalls.filtered_vcf
     }
 
     call gzipOutputs {
-        input: ID = ID, filtered_vcf = FilterMutectCalls.filtered_vcf, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, mutect_unfiltered_vcf_index = IndexFeatureFile.mutect_unfiltered_vcf_index, filtered_vcf_index = IndexFeatureFile.filtered_vcf_index 
+        input: cpu_req = cpu_req, ID = ID, filtered_vcf = FilterMutectCalls.filtered_vcf, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, mutect_unfiltered_vcf_index = IndexFeatureFile.mutect_unfiltered_vcf_index, filtered_vcf_index = IndexFeatureFile.filtered_vcf_index 
     }
 
     output {
@@ -70,6 +71,7 @@ task cram_extract_index {
         File ref_genome_dict
         File ref_genome_gzi
         String ID
+        String cpu_req
     }
     command <<<
         set -x -e -o pipefail
@@ -100,6 +102,7 @@ task mutect2 {
         File gnomad
         File gnomad_index
         String ID
+        String cpu_req
     }
     command <<<
         set -x -e -o pipefail
@@ -127,6 +130,7 @@ task LearnReadOrientationModel {
     input {
         File F1R2_counts
         String ID
+        String cpu_req
     }
     command <<<
         set -x -e -o pipefail
@@ -156,6 +160,7 @@ task GetPileUpSummaries {
         File gnomad
         File gnomad_index
         String ID
+        String cpu_req
     }
     command <<<
         set -x -e -o pipefail
@@ -182,6 +187,7 @@ task CalculateContamination {
     input {
         File pileupsummariestable
         String ID
+        String cpu_req
     }
     command <<<
         set -x -e -o pipefail
@@ -212,6 +218,7 @@ task FilterMutectCalls {
         File ref_genome_dict
         File ref_genome_gzi
         String ID
+        String cpu_req
     }
     command <<<
         set -x -e -o pipefail
@@ -236,6 +243,7 @@ task IndexFeatureFile {
         File mutect_unfiltered_vcf
         File filtered_vcf
         String ID
+        String cpu_req
     }
     command <<<
         set -x -e -o pipefail
@@ -271,6 +279,7 @@ task gzipOutputs {
         File extracted_regions
         File extracted_regions_index 
         String ID
+        String cpu_req
     }
 command <<<
 tar -xzvf ~{ID}_outputs.tar.gz * 
