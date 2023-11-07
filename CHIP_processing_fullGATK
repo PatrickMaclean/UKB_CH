@@ -46,7 +46,7 @@ workflow CHIP_processing {
     }
 
     call gzipOutputs {
-        input: cpu_req = cpu_req, ID = ID, filtered_vcf = FilterMutectCalls.filtered_vcf, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, mutect_unfiltered_vcf_index = IndexFeatureFile.mutect_unfiltered_vcf_index, filtered_vcf_index = IndexFeatureFile.filtered_vcf_index 
+        input: cpu_req = cpu_req, ID = ID, filtered_vcf = FilterMutectCalls.filtered_vcf, pileupsummariestable = GetPileUpSummaries.pileupsummariestable, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, mutect_unfiltered_vcf_index = IndexFeatureFile.mutect_unfiltered_vcf_index, filtered_vcf_index = IndexFeatureFile.filtered_vcf_index 
     }
 
     output {
