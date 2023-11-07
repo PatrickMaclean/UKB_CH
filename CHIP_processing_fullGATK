@@ -121,7 +121,7 @@ task mutect2 {
     }
     output {
         File mutect_unfiltered_vcf = "~{ID}_unfiltered_vcf.vcf"
-        File mutect_unfiltered_vcf_stats = "~{ID}_unfiltered_vcf.stats"
+        File mutect_unfiltered_vcf_stats = "~{ID}_unfiltered_vcf.vcf.stats"
         File F1R2_counts = "~{ID}_F1R2_counts.tar.gz"
     }
 }
