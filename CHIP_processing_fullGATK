@@ -80,7 +80,7 @@ task cram_extract_index {
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
-        dx_instance_type: ~{cpu_req}
+        dx_instance_type: "~{cpu_req}"
     }
     output {
         File extracted_regions = "~{ID}_extracted_regions.cram"
@@ -117,7 +117,7 @@ task mutect2 {
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
-        dx_instance_type: ~{cpu_req}
+        dx_instance_type: "~{cpu_req}"
     }
     output {
         File mutect_unfiltered_vcf = "~{ID}_unfiltered_vcf.vcf"
@@ -140,7 +140,7 @@ task LearnReadOrientationModel {
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
-        dx_instance_type: ~{cpu_req}
+        dx_instance_type: "~{cpu_req}"
     }
     output {
         File read_orientation_model = "~{ID}_read_orientation_model.tar.gz"
@@ -175,7 +175,7 @@ task GetPileUpSummaries {
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
-        dx_instance_type: ~{cpu_req}
+        dx_instance_type: "~{cpu_req}"
     }
     output {
         File pileupsummariestable = "~{ID}_pileupsummaries.table"
@@ -198,7 +198,7 @@ task CalculateContamination {
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
-        dx_instance_type: ~{cpu_req}
+        dx_instance_type: "~{cpu_req}"
     }
     output {
         File tumoursegmentstable = "~{ID}_tumoursegments.table"
@@ -232,7 +232,7 @@ task FilterMutectCalls {
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
-        dx_instance_type: ~{cpu_req}
+        dx_instance_type: "~{cpu_req}"
     }
     output {
         File filtered_vcf = "~{ID}_filtered.vcf"
@@ -257,7 +257,7 @@ task IndexFeatureFile {
     >>>
     runtime {
         docker: "dx://UKB_CHIP:/docker/gatk.tar.gz"
-        dx_instance_type: ~{cpu_req}
+        dx_instance_type: "~{cpu_req}"
     }
     output {
         File mutect_unfiltered_vcf_index = "~{ID}_unfiltered.vcf.gz.tbi"
