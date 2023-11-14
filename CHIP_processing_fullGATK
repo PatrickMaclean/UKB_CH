@@ -13,6 +13,7 @@ workflow CHIP_processing {
         File gnomad_index
         File pon
         File pon_index
+        File force_allele
         String ID = basename(cram_file, ".cram")
         String cpu_req
     }
