@@ -46,9 +46,6 @@ workflow CHIP_processing {
         input: cpu_req = cpu_req, ID = ID, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, filtered_vcf = FilterMutectCalls.filtered_vcf
     }
 
-    call gzipOutputs {
-        input: cpu_req = cpu_req, ID = ID, filtered_vcf = FilterMutectCalls.filtered_vcf, pileupsummariestable = GetPileUpSummaries.pileupsummariestable, read_orientation_model = LearnReadOrientationModel.read_orientation_model, tumoursegmentstable = CalculateContamination.tumoursegmentstable, contaminationtable = CalculateContamination.contaminationtable, mutect_unfiltered_vcf = mutect2.mutect_unfiltered_vcf, mutect_unfiltered_vcf_stats = mutect2.mutect_unfiltered_vcf_stats, extracted_regions = cram_extract_index.extracted_regions, extracted_regions_index = cram_extract_index.extracted_regions_index, mutect_unfiltered_vcf_index = IndexFeatureFile.mutect_unfiltered_vcf_index, filtered_vcf_index = IndexFeatureFile.filtered_vcf_index 
-    }
 
     output {
         File extracted_regions = cram_extract_index.extracted_regions
@@ -58,7 +55,6 @@ workflow CHIP_processing {
         File mutect_unfiltered_vcf_index = IndexFeatureFile.mutect_unfiltered_vcf_index
         File filtered_vcf = FilterMutectCalls.filtered_vcf
         File filtered_vcf_index = IndexFeatureFile.filtered_vcf_index
-        File output_tar_gz = gzipOutputs.output_tar_gz
     }
 }
 
@@ -263,29 +259,5 @@ task IndexFeatureFile {
     output {
         File mutect_unfiltered_vcf_index = "~{ID}_unfiltered.vcf.gz.tbi"
         File filtered_vcf_index = "~{ID}_filtered.vcf.gz.tbi"
-    }
-}
-
-task gzipOutputs {
-    input {
-        File mutect_unfiltered_vcf
-        File mutect_unfiltered_vcf_stats
-        File mutect_unfiltered_vcf_index
-        File filtered_vcf
-        File filtered_vcf_index
-        File tumoursegmentstable
-        File contaminationtable
-        File read_orientation_model
-        File pileupsummariestable
-        File extracted_regions
-        File extracted_regions_index 
-        String ID
-        String cpu_req
-    }
-command <<<
-tar -xzvf ~{ID}_outputs.tar.gz * 
->>>
-    output {
-        File output_tar_gz = "~{ID}_outputs.tar.gz"
     }
 }
